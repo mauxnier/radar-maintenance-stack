@@ -1,0 +1,405 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_TIMESCALEDB",
+      "label": "TimescaleDB",
+      "description": "PostgreSQL / TimescaleDB datasource",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" }
+  ],
+  "annotations": { "list": [] },
+  "description": "Dashboard maintenance radar générique — monitoring temps réel",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 200, "title": "Supervision générale", "type": "row" },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "OPERATIONAL": { "color": "green",  "text": "OPÉRATIONNEL" }, "DEGRADED": { "color": "orange", "text": "DÉGRADÉ" }, "FAULT": { "color": "red", "text": "PANNE" }, "MAINTENANCE": { "color": "blue", "text": "MAINTENANCE" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "color": { "mode": "thresholds" }
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1, "type": "stat",
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "title": "État opérationnel",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT operational_state as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 3 }] }, "color": { "mode": "thresholds" }, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2, "type": "stat",
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Alarmes actives",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT active_alarms as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": { "defaults": { "unit": "h", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "color": { "mode": "thresholds" } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3, "type": "stat",
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Uptime depuis maintenance",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT uptime_hours as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": { "defaults": { "mappings": [{ "options": { "rotating": { "color": "green", "text": "EN ROTATION" }, "fixed": { "color": "orange", "text": "FIXE" }, "stby": { "color": "blue", "text": "VEILLE" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "color": { "mode": "thresholds" } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4, "type": "stat",
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "État rotation antenne",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT rotation_state as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": { "defaults": { "unit": "rotrpm", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 10 }, { "color": "red", "value": 12 }] }, "color": { "mode": "thresholds" } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 5, "type": "stat",
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "RPM antenne",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT time, rpm as \"RPM\" FROM radar_metrics WHERE radar_id = '${radar_id}' AND $__timeFilter(time) ORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "color": { "mode": "thresholds" }, "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 6, "type": "stat",
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Tours cumulés",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT cumul_rotations as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "id": 201, "title": "Thermique & Environnement", "type": "row" },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth", "spanNulls": false },
+          "unit": "celsius",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 55 }, { "color": "red", "value": 70 }] }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Cabine" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Moteur" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Transmetteur" }, "properties": [{ "id": "color", "value": { "fixedColor": "purple", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Externe" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 10, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "Températures (°C)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT\n  time,\n  temp_cabin      AS \"Cabine\",\n  temp_motor      AS \"Moteur\",\n  temp_transmitter AS \"Transmetteur\",\n  temp_external   AS \"Externe\"\nFROM radar_metrics\nWHERE radar_id = '${radar_id}' AND $__timeFilter(time)\nORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth" },
+          "unit": "percent",
+          "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 80 }, { "color": "red", "value": 95 }] }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Interne" }, "properties": [{ "id": "color", "value": { "fixedColor": "teal", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Externe" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 6 },
+      "id": 11, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "Hygrométrie (%HR)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT time, humidity_internal AS \"Interne\", humidity_external AS \"Externe\" FROM radar_metrics WHERE radar_id = '${radar_id}' AND $__timeFilter(time) ORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth" },
+          "unit": "accG",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.8 }, { "color": "red", "value": 1.5 }] }
+        }, "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 6 },
+      "id": 12, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "Vibrations moteur (g RMS)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT time, vibration_g AS \"Vibration\" FROM radar_metrics WHERE radar_id = '${radar_id}' AND $__timeFilter(time) ORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 55 }, { "color": "red", "value": 70 }] },
+          "unit": "celsius", "min": 0, "max": 100
+        }, "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 14 },
+      "id": 13, "type": "gauge",
+      "options": { "minVizHeight": 75, "minVizWidth": 75, "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "title": "Temp cabine (°C)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT temp_cabin as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 70 }, { "color": "red", "value": 90 }] },
+          "unit": "celsius", "min": 0, "max": 110
+        }, "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 14 },
+      "id": 14, "type": "gauge",
+      "options": { "minVizHeight": 75, "minVizWidth": 75, "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "title": "Temp moteur (°C)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT temp_motor as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 60 }, { "color": "red", "value": 75 }] },
+          "unit": "celsius", "min": 0, "max": 100
+        }, "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 14 },
+      "id": 15, "type": "gauge",
+      "options": { "minVizHeight": 75, "minVizWidth": 75, "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "title": "Temp transmetteur (°C)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT temp_transmitter as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 }, "id": 202, "title": "Alimentation & Générateurs", "type": "row" },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth" },
+          "unit": "watt"
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Génératrice 1" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Génératrice 2" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Total" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }, { "id": "custom.lineWidth", "value": 3 }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+      "id": 20, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull", "mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "Puissance consommée (W)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT\n  time,\n  gen1_power_w AS \"Génératrice 1\",\n  gen2_power_w AS \"Génératrice 2\",\n  (COALESCE(gen1_power_w,0) + COALESCE(gen2_power_w,0)) AS \"Total\"\nFROM radar_metrics\nWHERE radar_id = '${radar_id}' AND $__timeFilter(time)\nORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth" },
+          "unit": "volt",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 210 }, { "color": "green", "value": 220 }, { "color": "orange", "value": 235 }, { "color": "red", "value": 245 }] }
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 21 },
+      "id": 21, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "Tension générateur 1 (V)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT time, gen1_voltage_v AS \"Tension\" FROM radar_metrics WHERE radar_id = '${radar_id}' AND $__timeFilter(time) ORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth" },
+          "unit": "hertz",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 49 }, { "color": "green", "value": 49.5 }, { "color": "orange", "value": 50.5 }, { "color": "red", "value": 51 }] }
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 21 },
+      "id": 22, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "Fréquence réseau (Hz)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT time, gen1_freq_hz AS \"Fréquence\" FROM radar_metrics WHERE radar_id = '${radar_id}' AND $__timeFilter(time) ORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "options": { "running": { "color": "green", "text": "EN MARCHE" }, "standby": { "color": "blue", "text": "VEILLE" }, "fault": { "color": "red", "text": "DÉFAUT" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "color": { "mode": "thresholds" }
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 25 },
+      "id": 23, "type": "stat",
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "État génératrice 1",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT gen1_state as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "amp",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 20 }, { "color": "red", "value": 25 }] },
+          "color": { "mode": "thresholds" }, "min": 0, "max": 30
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 25 },
+      "id": 24, "type": "gauge",
+      "options": { "minVizHeight": 75, "minVizWidth": 75, "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "title": "Courant génératrice 1 (A)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT gen1_current_a as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 }, "id": 203, "title": "Performances RF", "type": "row" },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth" },
+          "unit": "watt"
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Puissance crête" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Puissance moyenne" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 30 },
+      "id": 30, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull", "mean"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "Puissance RF émise (W)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT time, rf_power_peak_w AS \"Puissance crête\", rf_power_avg_w AS \"Puissance moyenne\" FROM radar_metrics WHERE radar_id = '${radar_id}' AND $__timeFilter(time) ORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2, "showPoints": "never", "lineInterpolation": "smooth" },
+          "unit": "short", "min": 1, "max": 4,
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 2 }, { "color": "red", "value": 3 }] }
+        }, "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 30 },
+      "id": 31, "type": "timeseries",
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "title": "VSWR (taux onde stationnaire)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "time_series", "rawQuery": true, "rawSql": "SELECT time, vswr AS \"VSWR\" FROM radar_metrics WHERE radar_id = '${radar_id}' AND $__timeFilter(time) ORDER BY time", "refId": "A" }]
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 2 }, { "color": "red", "value": 3 }] },
+          "unit": "short", "min": 1, "max": 4, "decimals": 3
+        }, "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 30 },
+      "id": 32, "type": "gauge",
+      "options": { "minVizHeight": 75, "minVizWidth": 75, "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "title": "VSWR instantané",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT vswr as value FROM radar_metrics WHERE radar_id = '${radar_id}' ORDER BY time DESC LIMIT 1", "refId": "A" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 }, "id": 204, "title": "Historique des alarmes", "type": "row" },
+
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "displayMode": "auto" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "severity" }, "properties": [{ "id": "displayName", "value": "Sévérité" }, { "id": "custom.width", "value": 90 }, { "id": "custom.displayMode", "value": "color-background" }, { "id": "mappings", "value": [{ "options": { "WARNING": { "color": "orange", "text": "WARNING" }, "CRITICAL": { "color": "red", "text": "CRITIQUE" } }, "type": "value" }] }] },
+          { "matcher": { "id": "byName", "options": "time" }, "properties": [{ "id": "displayName", "value": "Horodatage" }, { "id": "custom.width", "value": 160 }] },
+          { "matcher": { "id": "byName", "options": "alarm_code" }, "properties": [{ "id": "displayName", "value": "Code" }, { "id": "custom.width", "value": 160 }] },
+          { "matcher": { "id": "byName", "options": "message" }, "properties": [{ "id": "displayName", "value": "Message" }] },
+          { "matcher": { "id": "byName", "options": "resolved_at" }, "properties": [{ "id": "displayName", "value": "Résolue le" }, { "id": "custom.width", "value": 160 }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 39 },
+      "id": 40, "type": "table",
+      "options": { "footer": { "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "Horodatage" }] },
+      "title": "Journal des alarmes",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" }, "format": "table", "rawQuery": true, "rawSql": "SELECT\n  time,\n  alarm_code,\n  severity,\n  message,\n  resolved_at\nFROM radar_alarms\nWHERE radar_id = '${radar_id}'\n  AND $__timeFilter(time)\nORDER BY time DESC\nLIMIT 100", "refId": "A" }]
+    }
+
+  ],
+  "refresh": "2s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["radar", "maintenance", "temps-réel", "timescaledb"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "RADAR-01", "value": "RADAR-01" },
+        "hide": 0,
+        "label": "Radar",
+        "name": "radar_id",
+        "options": [{ "selected": true, "text": "RADAR-01", "value": "RADAR-01" }],
+        "query": "RADAR-01",
+        "skipUrlSync": false,
+        "type": "textbox",
+        "description": "Identifiant du radar à surveiller"
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Maintenance Radar — Temps Réel",
+  "uid": "radar-maintenance-rt",
+  "version": 1,
+  "weekStart": "monday"
+}

@@ -1,0 +1,113 @@
+# ============================================================
+#  Stack complète — Radar Maintenance Dashboard
+#  Services : TimescaleDB + Grafana + Simulateur Python
+# ============================================================
+#
+#  Démarrage :
+#    docker compose up -d
+#
+#  Arrêt :
+#    docker compose down
+#
+#  Voir les logs du simulateur :
+#    docker compose logs -f simulator
+#
+#  Accès Grafana :
+#    http://localhost:3000  (admin / admin)
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  #  TimescaleDB (PostgreSQL 15 + TimescaleDB 2.x)
+  # ----------------------------------------------------------
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: radar-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB:       radar
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d radar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ----------------------------------------------------------
+  #  Simulateur Python — génère les données toutes les secondes
+  # ----------------------------------------------------------
+  simulator:
+    image: python:3.11-slim
+    container_name: radar-simulator
+    restart: unless-stopped
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    volumes:
+      - ./simulator.py:/app/simulator.py:ro
+    working_dir: /app
+    command: >
+      bash -c "pip install psycopg2-binary --quiet && python simulator.py --dsn postgresql://postgres:postgres@timescaledb:5432/radar --interval 1 --radar-id RADAR-01"
+    environment:
+      PYTHONUNBUFFERED: "1"
+
+  # ----------------------------------------------------------
+  #  Fault Injector — UI web pour déclencher des pannes
+  # ----------------------------------------------------------
+  fault-injector:
+    image: python:3.11-slim
+    container_name: radar-fault-injector
+    restart: unless-stopped
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    volumes:
+      - ./fault_injector.py:/app/fault_injector.py:ro
+    working_dir: /app
+    command: >
+      bash -c "pip install fastapi uvicorn psycopg2-binary --quiet && python fault_injector.py"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL:     "postgresql://postgres:postgres@timescaledb:5432/radar"
+      RADAR_ID:         "RADAR-01"
+    ports:
+      - "5001:5001"
+
+  # ----------------------------------------------------------
+  #  Grafana — dashboard temps réel
+  # ----------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: radar-grafana
+    restart: unless-stopped
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER:     admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/radar_dashboard.json
+      # Datasource auto-provisionnée
+      GF_DATASOURCES_DEFAULT_NAME: TimescaleDB
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  timescaledb-data:
+  grafana-data:
